@@ -10,7 +10,6 @@ async function run(): Promise<void> {
     if (Number.isNaN(issueNumber)) {
       throw new Error("issue-number must be a number");
     }
-
     const token = core.getInput("token", { required: true });
     const projectNumber = Number(core.getInput("project-number", { required: true }));
 
@@ -58,26 +57,16 @@ async function run(): Promise<void> {
 
     const expectedType = issue.pull_request ? "PullRequest" : "Issue";
 
-    const cards = await getCards(projectOwner, projectNumber, token);
-    for (const card of cards) {
-      if (expectedType === card.content.__typename && card.content?.databaseId === databaseId) {
-        core.info(`Removing ${card.databaseId} from the project`);
-        // https://docs.github.com/en/rest/projects/cards#delete-a-project-card
-        await octokit.request("DELETE /projects/columns/cards/{card_id}", {
-          card_id: card.databaseId
-        });
-
-        core.info("🚀 Card removed from project 🚀");
-        return;
-      }
+    const item = await getItem(projectOwner, projectNumber, token, expectedType, databaseId);
+    if (!item) {
+      core.info("Item not found in project");
+      return;
     }
-
-    // Card not found
-    if (core.getBooleanInput("fail-if-not-found")) {
-      throw new Error("Card not found");
-    }
-
-    core.info("Card not found in project");
+    // remove item from project
+    core.info(`Removing ${item.fullDatabaseId} from the project`);
+    await deleteItem(projectNumber, token, item.id);
+    core.info("🚀 Card removed from project 🚀");
+    return;
   } catch (error) {
     core.setFailed(`❌ Action failed with error: ${error}`);
   }
@@ -85,95 +74,143 @@ async function run(): Promise<void> {
 
 run();
 
-const GET_CARDS_QUERY = `query ($login: String!, $projectNumber: Int!) {
-  organization(login: $login) {
-    name
-    project(number: $projectNumber) {
-      databaseId
-      name
-      url
-      columns(first: 10) {
-        nodes {
-          databaseId
-          name
-          cards {
-            edges {
-              node {
-                databaseId
-                content {
-                  __typename
-                  ... on Issue {
-                    databaseId
-                    number
-                  }
-                  ... on PullRequest {
-                    databaseId
-                    number
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}`;
-
-interface OrgWithProject {
+// Update to projectsV2
+interface OrgWithProjectV2 {
   organization: {
     name: string;
-    project: {
+    projectV2: {
       databaseId: number;
-      name: string;
-      url: string;
-      columns: {
-        nodes: [
+      items: {
+        totalCount: number;
+        edges: [
           {
-            databaseId: number;
-            name: string;
-            cards: {
-              edges: [
-                {
-                  node: Card;
-                }
-              ];
+            node: {
+              content: {
+                __typename: "Issue" | "PullRequest";
+                fullDatabaseId: string;
+                number: number;
+                id: string;
+              };
             };
           }
         ];
+        pageInfo: {
+          endCursor: string;
+          hasNextPage: boolean;
+        };
       };
     };
   };
 }
 
-interface Card {
-  databaseId: number;
-  content: {
-    __typename: "Issue" | "PullRequest";
-    databaseId: number;
-    number: number;
-  };
+interface Item {
+  __typename: "Issue" | "PullRequest";
+  fullDatabaseId: string;
+  id: string;
+  number: number;
 }
 
-async function getCards(owner: string, project: number, token: string): Promise<Card[]> {
+const GET_ITEMS_PAGINATED_QUERY = `
+query($organization: String!, $projectNumber: Int!, $cursor: String) {
+  organization(login: $organization)
+  {
+    projectV2(number: $projectNumber)
+    {
+      databaseId
+      items (first: 100, after: $cursor)
+      {
+        totalCount
+        edges{
+          node{
+            content{
+              __typename
+              ... on Issue {
+                fullDatabaseId
+                number
+                id
+              }
+              ... on PullRequest {
+                fullDatabaseId
+                number
+                id
+              }
+            }
+          }
+        }
+        pageInfo{
+          endCursor
+          hasNextPage
+        }
+      }
+    }
+  }
+}
+`;
+
+async function getItem(
+  owner: string,
+  project: number,
+  token: string,
+  expectedType: string,
+  databaseId: number
+): Promise<Item | null> {
   const graphqlWithAuth = graphql.defaults({
     headers: {
       authorization: `token ${token}`
     }
   });
-  const resp: OrgWithProject = await graphqlWithAuth(GET_CARDS_QUERY, {
-    login: owner,
-    projectNumber: project
-  });
 
-  core.info(`Project: ${resp.organization.project.name}`);
+  let hasNextPage = true;
+  let cursor = null;
+  while (hasNextPage) {
+    const resp: OrgWithProjectV2 = await graphqlWithAuth(GET_ITEMS_PAGINATED_QUERY, {
+      organization: owner,
+      projectNumber: project,
+      cursor: cursor
+    });
 
-  const cards: Card[] = [];
-  for (const column of resp.organization.project.columns.nodes) {
-    for (const card of column.cards.edges) {
-      cards.push(card.node);
+    hasNextPage = resp.organization.projectV2.items.pageInfo.hasNextPage;
+    cursor = resp.organization.projectV2.items.pageInfo.endCursor;
+
+    for (const edge of resp.organization.projectV2.items.edges) {
+      // Issues on the board may not be accessible from this repository
+      if (edge.node == null || edge.node.content == null) {
+        continue;
+      }
+      if (edge.node.content.__typename === expectedType && edge.node.content.fullDatabaseId === databaseId.toString()) {
+        core.info(`Item found: ${edge.node.content.fullDatabaseId}`);
+        return {
+          __typename: edge.node.content.__typename,
+          fullDatabaseId: edge.node.content.fullDatabaseId,
+          id: edge.node.content.id,
+          number: edge.node.content.number
+        };
+      }
     }
   }
+  return null;
+}
 
-  return cards;
+const DELELE_PROJECT_MUTATION = `mutation($projectID: ID!, $itemID: ID!) {
+  deleteProjectV2Item(
+    input: {
+      projectId: $projectID,
+      itemId: $itemID,
+    }
+  ) {
+    deletedItemId
+  }
+}`;
+
+async function deleteItem(project: number, token: string, itemID: string): Promise<void> {
+  const graphqlWithAuth = graphql.defaults({
+    headers: {
+      authorization: `token ${token}`
+    }
+  });
+
+  await graphqlWithAuth(DELELE_PROJECT_MUTATION, {
+    projectID: project,
+    itemID: itemID
+  });
 }
