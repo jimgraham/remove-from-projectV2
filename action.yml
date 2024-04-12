@@ -1,6 +1,6 @@
-name: 'Remove from Project'
-description: 'Removes an issue or pull request from a classic project board'
-author: 'joshmgross'
+name: 'Remove from ProjectV2'
+description: 'Removes an issue or pull request from a V2 project board'
+author: 'jimgraham'
 inputs:
   issue-number:
     required: true
@@ -24,12 +24,8 @@ inputs:
       For projects outside of the current workflow's repository,
       a separate token is required.
     required: false
-  fail-not-found:
-    required: false
-    default: false
-    description: 'Fail the action if the issue is not on the project board.'
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
 branding:
   icon: 'trash-2'

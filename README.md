@@ -1,6 +1,8 @@
-# Remove from Project (Classic)
+# Remove from Project V2
 
-An action to remove an issue from a classic/V1 project board.
+An action to remove an issue from a V2 project board.
+
+This is based directly on [Remove from project (classic)](https://github.com/joshmgross/remove-from-project-classic). Reworked based on MIT license.
 
 ## Inputs
 
@@ -19,7 +21,7 @@ Use `fail-not-found: true` if you want the action to fail if the issue or pull r
 ### Remove an issue from a project in the current organization
 
 ```yaml
-- uses: joshmgross/remove-from-project-classic@main
+- uses: jimgraham/remove-from-project-v2@main
   with:
     project-number: 123
     issue-number: 10
@@ -29,7 +31,7 @@ Use `fail-not-found: true` if you want the action to fail if the issue or pull r
 ### Remove an issue form a project another organization
 
 ```yaml
-- uses: joshmgross/remove-from-project-classic@main
+- uses: jimgraham/remove-from-project-v2@main
   with:
     project-owner: github
     project-number: 456
@@ -40,7 +42,7 @@ Use `fail-not-found: true` if you want the action to fail if the issue or pull r
 ### Remove an issue from a separate repository
 
 ```yaml
-- uses: joshmgross/remove-from-project-classic@main
+- uses: jimgraham/remove-from-project-v2@main
   with:
     project-number: 123
     issue-owner: actions
