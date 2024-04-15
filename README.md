@@ -1,4 +1,4 @@
-# Remove from Project V2
+# Remove from `ProjectV2`
 
 An action to remove an issue from a V2 project board.
 
@@ -21,7 +21,7 @@ Use `fail-not-found: true` if you want the action to fail if the issue or pull r
 ### Remove an issue from a project in the current organization
 
 ```yaml
-- uses: jimgraham/remove-from-project-v2@main
+- uses: jimgraham/remove-from-projectV2@main
   with:
     project-number: 123
     issue-number: 10
@@ -31,7 +31,7 @@ Use `fail-not-found: true` if you want the action to fail if the issue or pull r
 ### Remove an issue form a project another organization
 
 ```yaml
-- uses: jimgraham/remove-from-project-v2@main
+- uses: jimgraham/remove-from-projectV2@main
   with:
     project-owner: github
     project-number: 456
@@ -42,7 +42,7 @@ Use `fail-not-found: true` if you want the action to fail if the issue or pull r
 ### Remove an issue from a separate repository
 
 ```yaml
-- uses: jimgraham/remove-from-project-v2@main
+- uses: jimgraham/remove-from-projectV2@main
   with:
     project-number: 123
     issue-owner: actions
@@ -50,8 +50,3 @@ Use `fail-not-found: true` if you want the action to fail if the issue or pull r
     issue-number: 32
     token: ${{ secrets.PROJECT_TOKEN }}
 ```
-
-## Not supported yet
-
-- User and repository project boards
-- Project cards that are not issues or pull requests
