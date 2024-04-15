@@ -1,5 +1,5 @@
 {
-  "name": "remove-from-project-v2",
+  "name": "remove-from-projectv2",
   "version": "1.0.0",
   "description": "A GitHub Action",
   "main": "dist/index.js",
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jimgraham/remove-from-project-v2.git"
+    "url": "git+https://github.com/jimgraham/remove-from-projectV2.git"
   },
   "keywords": [
     "Actions",
@@ -24,9 +24,9 @@
   "author": "jimgraham",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jimgraham/remove-from-project-v2/issues"
+    "url": "https://github.com/jimgraham/remove-from-projectV2/issues"
   },
-  "homepage": "https://github.com/jimgraham/remove-from-project-v2#readme",
+  "homepage": "https://github.com/jimgraham/remove-from-projectV2#readme",
   "dependencies": {
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
