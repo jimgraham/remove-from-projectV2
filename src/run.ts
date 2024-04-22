@@ -1,33 +1,26 @@
 import * as core from "@actions/core";
-import * as github from "@actions/github";
 import { Octokit } from "@octokit/core";
 import { graphql } from "@octokit/graphql";
 
-async function run(): Promise<void> {
+interface Inputs {
+  issueNumber: number;
+  projectNumber: number;
+  projectOwner: string;
+  issueOwner: string;
+  issueRepository: string;
+  octokit: Octokit;
+  graphqlWithAuth: typeof graphql;
+}
+
+export async function run(inputs: Inputs): Promise<void> {
   try {
-    // Inputs and validation
-    const issueNumber = Number(core.getInput("issue-number"));
-    if (Number.isNaN(issueNumber)) {
-      throw new Error("issue-number must be a number");
-    }
-    const token = core.getInput("token", { required: true });
-    const projectNumber = Number(core.getInput("project-number", { required: true }));
-
-    const currentRepository = github.context.payload.repository;
-    const projectOwner = core.getInput("project-owner") || currentRepository?.owner.login;
-    if (!projectOwner) {
-      throw new Error("project-owner must be specified, unable to determine from context");
-    }
-
-    const issueOwner = core.getInput("issue-owner") || currentRepository?.owner.login;
-    const issueRepository = core.getInput("issue-repository") || currentRepository?.name;
-    if (!issueOwner || !issueRepository) {
-      throw new Error("issue-owner and issue-repository must be set, unable to determine from context");
-    }
-
-    const octokit = new Octokit({
-      auth: token
-    });
+    const issueNumber = inputs.issueNumber;
+    const projectNumber = inputs.projectNumber;
+    const projectOwner = inputs.projectOwner;
+    const issueOwner = inputs.issueOwner;
+    const issueRepository = inputs.issueRepository;
+    const octokit = inputs.octokit;
+    const graphqlWithAuth = inputs.graphqlWithAuth;
 
     // https://docs.github.com/en/rest/issues/issues#get-an-issue
     const issue = (
@@ -53,26 +46,24 @@ async function run(): Promise<void> {
       databaseId = pr.id;
     }
 
-    core.info(`${issue.pull_request ? "Issue" : "Pull request"} database ID: ${databaseId}`);
-
     const expectedType = issue.pull_request ? "PullRequest" : "Issue";
+    core.info(`Type: ${expectedType} database ID: ${databaseId}`);
+    console.log(`Type: ${expectedType} database ID: ${databaseId}`);
 
-    const item = await getItem(projectOwner, projectNumber, token, expectedType, databaseId);
+    const item = await getItem(graphqlWithAuth, projectOwner, projectNumber, expectedType, databaseId);
     if (!item) {
       core.info("Item not found in project");
       return;
     }
     // remove item from project
     core.info(`Removing ${item.fullDatabaseId} from the project`);
-    await deleteItem(projectNumber, token, item.id);
+    await deleteItem(graphqlWithAuth, projectNumber, item.id);
     core.info("🚀 Card removed from project 🚀");
     return;
   } catch (error) {
     core.setFailed(`❌ Action failed with error: ${error}`);
   }
 }
-
-run();
 
 // Update to projectsV2
 interface OrgWithProjectV2 {
@@ -148,18 +139,12 @@ query($organization: String!, $projectNumber: Int!, $cursor: String) {
 `;
 
 async function getItem(
+  graphqlWithAuth: typeof graphql,
   owner: string,
   project: number,
-  token: string,
   expectedType: string,
   databaseId: number
 ): Promise<Item | null> {
-  const graphqlWithAuth = graphql.defaults({
-    headers: {
-      authorization: `token ${token}`
-    }
-  });
-
   let hasNextPage = true;
   let cursor = null;
   while (hasNextPage) {
@@ -177,6 +162,7 @@ async function getItem(
       if (edge.node == null || edge.node.content == null) {
         continue;
       }
+      core.info(`Checking item: ${edge.node.content}`);
       if (edge.node.content.__typename === expectedType && edge.node.content.fullDatabaseId === databaseId.toString()) {
         core.info(`Item found: ${edge.node.content.fullDatabaseId}`);
         return {
@@ -191,7 +177,8 @@ async function getItem(
   return null;
 }
 
-const DELELE_PROJECT_MUTATION = `mutation($projectID: ID!, $itemID: ID!) {
+const DELELE_PROJECT_MUTATION = `
+mutation($projectID: ID!, $itemID: ID!) {
   deleteProjectV2Item(
     input: {
       projectId: $projectID,
@@ -200,15 +187,10 @@ const DELELE_PROJECT_MUTATION = `mutation($projectID: ID!, $itemID: ID!) {
   ) {
     deletedItemId
   }
-}`;
+}
+`;
 
-async function deleteItem(project: number, token: string, itemID: string): Promise<void> {
-  const graphqlWithAuth = graphql.defaults({
-    headers: {
-      authorization: `token ${token}`
-    }
-  });
-
+async function deleteItem(graphqlWithAuth: typeof graphql, project: number, itemID: string): Promise<void> {
   await graphqlWithAuth(DELELE_PROJECT_MUTATION, {
     projectID: project,
     itemID: itemID
