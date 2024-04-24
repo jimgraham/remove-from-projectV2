@@ -2,18 +2,9 @@ name: 'Remove from ProjectV2'
 description: 'Removes an issue or pull request from a V2 project board'
 author: 'jimgraham'
 inputs:
-  issue-number:
+  item-id:
     required: true
     description: 'The number of the issue or pull request to remove.'
-  issue-owner:
-    required: false
-    description: 'The owner of the issue or pull request to remove. Defaults to the current repository owner.'
-  issue-repository:
-    required: false
-    description: 'The repository of the issue or pull request to remove. Defaults to the current repository.'
-  project-owner:
-    required: false
-    description: 'The organization that contains the project.'
   project-number:
     required: true
     description: 'The number of the project board.'
