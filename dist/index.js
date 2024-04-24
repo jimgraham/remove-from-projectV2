@@ -103,7 +103,7 @@ async function run(inputs) {
 }
 exports.run = run;
 const GET_PROJECTV2_QUERY = `
-query($organization: String!, $projectNumber: Int!, $cursor: String) {
+query($organization: String!, $projectNumber: Int!) {
   organization(login: $organization)
   {
     projectV2(number: $projectNumber)
