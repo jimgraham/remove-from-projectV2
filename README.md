@@ -33,18 +33,13 @@ This is based directly on [Remove from project (classic)](https://github.com/jos
     issue-number: 16
     token: ${{ secrets.PROJECT_TOKEN }}
 - uses: jimgraham/remove-from-projectV2@main
-    if: steps.find-in-project.outputs.itemId != null
+    if: steps.find-in-project.outputs.item-id != null
     with:
-      github-token: ${{ secrets.SHOPIFY_GH_ACCESS_TOKEN }}
+      token: ${{ secrets.SHOPIFY_GH_ACCESS_TOKEN }}
       project-number: ${{ env.PROJECT_ID }}
       project-owner: github
       project-number: 456
-      project-item-id: ${{ steps.add_to_project.outputs.itemId }}
-- uses: jimgraham/remove-from-projectV2@main
-  with:
-    project-number: 123
-    item-id: 456
-    token: ${{ secrets.PROJECT_TOKEN }}
+      item-id: ${{ steps.add_to_project.outputs.item-id }}
 ```
 
 ### Remove an issue from a separate repository
