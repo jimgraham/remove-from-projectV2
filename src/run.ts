@@ -2,7 +2,7 @@ import * as core from "@actions/core";
 import { graphql } from "@octokit/graphql";
 
 interface Inputs {
-  itemId: number;
+  itemId: string;
   projectNumber: number;
   owner: string;
   graphqlWithAuth: typeof graphql;
@@ -38,7 +38,7 @@ query($organization: String!, $projectNumber: Int!) {
   {
     projectV2(number: $projectNumber)
     {
-      databaseId
+      id
     }
   }
 }
@@ -69,7 +69,7 @@ mutation($projectID: ID!, $itemID: ID!) {
 }
 `;
 
-async function deleteItem(graphqlWithAuth: typeof graphql, projectID: string, itemID: number): Promise<void> {
+async function deleteItem(graphqlWithAuth: typeof graphql, projectID: string, itemID: string): Promise<void> {
   await graphqlWithAuth(DELELE_PROJECT_MUTATION, {
     projectID: projectID,
     itemID: itemID

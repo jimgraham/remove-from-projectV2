@@ -15,7 +15,7 @@ describe("run", () => {
     });
 
     await run({
-      itemId: 456,
+      itemId: "PVTI_456",
       projectNumber: 1,
       owner: "octokit",
       graphqlWithAuth: mockGraphQLWithAuth as unknown as typeof graphql
@@ -33,7 +33,7 @@ mutation($projectID: ID!, $itemID: ID!) {
   }
 }
 `,
-      { projectID: "PJ_1", itemID: 456 }
+      { projectID: "PJ_1", itemID: "PVTI_456" }
     );
   });
 });

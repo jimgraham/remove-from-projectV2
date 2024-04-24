@@ -14,7 +14,7 @@ async function main(): Promise<void> {
   }
 
   await run({
-    itemId: Number(core.getInput("item-id", { required: true })),
+    itemId: core.getInput("item-id", { required: true }),
     owner: owner,
     projectNumber: Number(core.getInput("project-number", { required: true })),
     graphqlWithAuth: graphql.defaults({

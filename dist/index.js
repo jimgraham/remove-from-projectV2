@@ -42,7 +42,7 @@ async function main() {
         throw new Error("project-owner must be specified, unable to determine from context");
     }
     await (0, run_1.run)({
-        itemId: Number(core.getInput("item-id", { required: true })),
+        itemId: core.getInput("item-id", { required: true }),
         owner: owner,
         projectNumber: Number(core.getInput("project-number", { required: true })),
         graphqlWithAuth: graphql_1.graphql.defaults({
@@ -108,7 +108,7 @@ query($organization: String!, $projectNumber: Int!) {
   {
     projectV2(number: $projectNumber)
     {
-      databaseId
+      id
     }
   }
 }
