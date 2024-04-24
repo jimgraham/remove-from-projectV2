@@ -5,6 +5,9 @@ inputs:
   item-id:
     required: true
     description: 'The number of the issue or pull request to remove.'
+  project-owner:
+    required: false
+    description: 'The owner of project. Defaults to the current repository owner.'
   project-number:
     required: true
     description: 'The number of the project board.'
