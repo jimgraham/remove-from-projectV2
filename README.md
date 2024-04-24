@@ -6,36 +6,44 @@ This is based directly on [Remove from project (classic)](https://github.com/jos
 
 ## Inputs
 
-- `issue-number` - The number of the issue or pull request to remove
-- `project-number` - The number of the project board
-- `token` - An authentication token with access to the project board and issue/pull request
-
-`project-owner` can be set if the project board is not in the current organization.
-
-`issue-owner` and `issue-repository` can be specified if the issue or pull request does not exist in the workflow's repository.
-
-Use `fail-not-found: true` if you want the action to fail if the issue or pull request does not exist on the project board.
+* `item-id` - The ID of the card to remove
+* `project-number` - The number of the project board
+* `token` - An authentication token with access to the project board and issue/pull request
 
 ## Usage
 
-### Remove an issue from a project in the current organization
+### Remove an item from a project
 
 ```yaml
 - uses: jimgraham/remove-from-projectV2@main
   with:
     project-number: 123
-    issue-number: 10
+    item-id: 456
     token: ${{ secrets.PROJECT_TOKEN }}
 ```
 
-### Remove an issue form a project another organization
+### Remove an item after finding it on the board
 
 ```yaml
-- uses: jimgraham/remove-from-projectV2@main
+- uses: jimgraham/find-in-projectV2@main
+  id: find-in-project
   with:
     project-owner: github
     project-number: 456
     issue-number: 16
+    token: ${{ secrets.PROJECT_TOKEN }}
+- uses: jimgraham/remove-from-projectV2@main
+    if: steps.find-in-project.outputs.itemId != null
+    with:
+      github-token: ${{ secrets.SHOPIFY_GH_ACCESS_TOKEN }}
+      project-number: ${{ env.PROJECT_ID }}
+      project-owner: github
+      project-number: 456
+      project-item-id: ${{ steps.add_to_project.outputs.itemId }}
+- uses: jimgraham/remove-from-projectV2@main
+  with:
+    project-number: 123
+    item-id: 456
     token: ${{ secrets.PROJECT_TOKEN }}
 ```
 
